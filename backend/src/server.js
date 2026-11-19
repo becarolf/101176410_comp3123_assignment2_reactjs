@@ -1,0 +1,68 @@
+require("dotenv").config();
+
+const express = require("express");
+const helmet = require("helmet");
+const connectDB = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
+const errorMiddleware = require("./middleware/errorMiddleware");
+const employeeRoutes = require("./routes/employeeRoutes");
+const requestLogger = require("./middleware/requestLogger");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// the middleware
+app.use(helmet());
+app.use(requestLogger);
+app.use(express.json());
+
+// make sure MongoDB is connected before accessing the API
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.use("/api/v1/user", userRoutes); // User routes
+app.use("/api/v1/emp", employeeRoutes); // Employee routes
+
+// health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Employee Management API is running",
+  });
+});
+
+// handle routes that do not exist
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+  });
+});
+
+// handle application errors
+app.use(errorMiddleware);
+
+// export the Express app for Vercel
+module.exports = app;
+
+// start the server locally
+if (!process.env.VERCEL) {
+  const startServer = async () => {
+    try {
+      await connectDB();
+
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    } catch (error) {
+      console.error("Failed to start server:", error.message);
+    }
+  };
+
+  startServer();
+}
