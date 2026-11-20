@@ -1,4 +1,4 @@
-const { body, validationResult } = require("express-validator");
+const { body, query, validationResult } = require("express-validator");
 
 // validation rules for creating an employee
 const employeeValidation = [
@@ -52,6 +52,31 @@ const employeeValidation = [
     .withMessage("Department cannot exceed 100 characters"),
 ];
 
+// validate optional employee search filters
+const searchValidation = [
+  query("department")
+    .optional()
+    .isString()
+    .withMessage("Department must be a string")
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage("Department cannot be empty")
+    .isLength({ max: 100 })
+    .withMessage("Department cannot exceed 100 characters"),
+
+  query("position")
+    .optional()
+    .isString()
+    .withMessage("Position must be a string")
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage("Position cannot be empty")
+    .isLength({ max: 100 })
+    .withMessage("Position cannot exceed 100 characters"),
+];
+
 // return validation errors
 const validateEmployee = (req, res, next) => {
   const errors = validationResult(req);
@@ -68,5 +93,6 @@ const validateEmployee = (req, res, next) => {
 
 module.exports = {
   employeeValidation,
+  searchValidation,
   validateEmployee,
 };

@@ -158,7 +158,7 @@ const updateEmployee = async (req, res, next) => {
 };
 
 
- // Delete an employee by ID
+ // delete an employee by ID
 const deleteEmployee = async (req, res, next) => {
   try {
     // get employee ID from the query parameter
@@ -192,5 +192,42 @@ const deleteEmployee = async (req, res, next) => {
   }
 };
 
+// search employees belonging to the authenticated user
+const searchEmployees = async (req, res, next) => {
+  try {
+    const { department, position } = req.query;
 
-module.exports = { createEmployee, getAllEmployees, getEmployeeById, updateEmployee, deleteEmployee };
+    // treat special regex characters as literal text
+    const escapeRegex = (text) =>
+      text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // always restrict results to the authenticated user
+    const filter = { user: req.userId };
+
+    if (department) {
+      filter.department = {
+        $regex: escapeRegex(department),
+        $options: "i",
+      };
+    }
+
+    if (position) {
+      filter.position = {
+        $regex: escapeRegex(position),
+        $options: "i",
+      };
+    }
+
+    const employees = await Employee.find(filter);
+
+    res.status(200).json({
+      message: "Employees retrieved successfully",
+      employees,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+module.exports = { createEmployee, getAllEmployees, getEmployeeById, updateEmployee, deleteEmployee, searchEmployees };
